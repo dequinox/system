@@ -23,18 +23,17 @@ int main()
             }
       }*/
 
+      Database my_db("dequinox");
       string name;
       cin >> query >> name;
 
       if (query == "get")
       {
-            API::show(name);
+            my_db.print(name);
       }
       else
       {
-            pair <string, string> p;
-            p = make_pair("x", "1");
-            API::create(name, {p});
+            my_db.create(name);
       }
 
       return 0;

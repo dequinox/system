@@ -1,7 +1,7 @@
 #ifndef RELATIONSHIP_H
 #define RELATIONSHIP_H
 
-struct Relationship
+struct Relation
 {
       bool in_use{false};
       int first_node;

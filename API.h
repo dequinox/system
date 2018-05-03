@@ -3,76 +3,102 @@
 
 #include "IO.h"
 #include "Node.h"
+#include <stack>
 #include <iostream>
 #include <cstring>
 #include "Label.h"
 #include "Restore.h"
 #include "Property.h"
-#include "Relationship.h"
+#include "Relation.h"
 
-const std::string node_file = "nodestore";
-const std::string node_restore = "node.restore";
-
-const std::string label_file = "labelstore";
-const std::string label_restore = "label.restore";
-
-const std::string property_file = "propertystore";
-const std::string property_restore = "property.restore";
-
-namespace API
+class Database
 {
+      private:
+            const std::string node_ids_file{".node.ids"};
+            const std::string label_ids_file{".label.ids"};
+            const std::string property_ids_file{".property.ids"};
+            const std::string relation_ids_file{".relation.store"};
 
-      int getRestoreId(std::string filename)
-      {
-            Restore new_restore = IO::pop<Restore>(filename);
-            return new_restore.restore_id;
-      }
+            std::string m_db;
 
-      void show(std::string filename)
-      {
-            std::ifstream file(filename);
+            IO::File<Node> * nodes;
+            IO::File<Label> * labels;
+            IO::File<Property> * properties;
+            IO::File<Relation> * relations;
 
-            if (filename == "nodestore")
+            std::stack<unsigned long> nodeIDs;
+            std::stack<unsigned long> labelIDs;
+            std::stack<unsigned long> relationIDs;
+            std::stack<unsigned long> propertyIDs;
+
+
+
+      public:
+            Database(const Database &other) = delete;
+            Database() = delete;
+
+            Database(std::string db) : m_db(db)
             {
-                  Node data;
-                  while (file.read(reinterpret_cast<char *>(&data), sizeof(Node)))
-                  {
-                        std::cout << data.in_use << " " << data.label_id << std::endl;
-                  }
+                  nodeIDs = IO::GetData(node_ids_file);
+                  labelIDs = IO::GetData(label_ids_file);
+                  relationIDs = IO::GetData(relation_ids_file);
+                  propertyIDs = IO::GetData(property_ids_file);
+
+                  nodes = new IO::File<Node>(m_db + ".nodes.store");
+                  labels = new IO::File<Label>(m_db + ".labels.store");
+                  relations = new IO::File<Relation>(m_db + ".relation.store");
+                  properties = new IO::File<Property>(m_db + ".properties.store");
             }
 
-            else
+            void create(std::string label)
             {
-                  Label data;
-                  while (file.read(reinterpret_cast<char *>(&data), sizeof(Label)))
+                  int node_id = nodes->getSize();
+                  int label_id = labels->getSize();
+
+                  if (!nodeIDs.empty())
                   {
-                        std::cout << data.in_use << " " << data.value << std::endl;
+                        node_id = nodeIDs.top();
+                        nodeIDs.pop();
                   }
+
+                  if (!labelIDs.empty())
+                  {
+                        label_id = labelIDs.top();
+                        labelIDs.pop();
+                  }
+
+                  Node new_node{true, 0, 0, label_id};
+
+                  Label new_label{true};
+                  strcpy(new_label.value, label.c_str());
+
+                  nodes->write(node_id, new_node);
+                  labels->write(label_id, new_label);
             }
 
-            file.close();
-      }
+            void print(std::string filename)
+            {
+                  IO::print<Node>(filename);
+            }
 
-      void create(std::string label, std::initializer_list<std::pair<std::string, std::string> > list)
-      {
-            int node_id = getRestoreId(node_restore);
-            int label_id = getRestoreId(label_restore);
-            int property_id = getRestoreId(property_restore);
+            void newProperty(int id, auto list)
+            {
+                  // TODO
+            }
 
-            if (node_id == 0)  node_id = IO::getFileSize(node_file);
-            if (label_id == 0) label_id = IO::getFileSize(label_file);
-            if (property_id == 0) property_id = IO::getFileSize(property_id);
+            void truncate()
+            {
+                  // TODO
+            }
 
-            Node new_node{true, 0, property_id, label_id};
+            ~Database()
+            {
+                  delete nodes;
+                  delete labels;
+                  delete properties;
+                  delete relations;
+            }
 
-            Label new_label;
-            new_label.in_use = true;
-            strcpy(new_label.value, label.c_str());
-
-            IO::write(node_id, new_node, node_file);
-            IO::write(label_id, new_label, label_file);
-            IO::write()
-      }
-}
+};
 
 #endif /* API_H */

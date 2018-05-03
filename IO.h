@@ -1,6 +1,7 @@
 #ifndef IO_H
 #define IO_H
 
+#include <stack>
 #include <fstream>
 #include <cstdlib>
 #include <iostream>
@@ -9,41 +10,63 @@ namespace IO
 {
 
       template<typename T>
-      void write(unsigned long id, T data, std::string file_name)
+      class File
       {
-            std::fstream file(file_name, std::ios::in | std::ios::out | std::ios::binary);
+            private:
+                  std::fstream file;
+                  std::string filename;
+                  unsigned long pos;
+            public:
+                  File(std::string filename) : filename(filename)
+                  {
+                        file.open(filename, std::ios::app | std::ios::binary);
+                        file.close();
+                        file.open(filename, std::ios::in | std::ios::out | std::ios::binary);
+                  }
 
-            file.seekp(id);
-            file.write(reinterpret_cast<char *>(&data), sizeof(T));
-            file.close();
-      }
+                  unsigned long getSize()
+                  {
+                        file.seekg(0, std::ios::end);
+                        return file.tellg();
+                  }
 
-      unsigned long getFileSize(std::string file_name)
+                  void write(unsigned long id, T new_data)
+                  {
+                        file.seekp(id);
+                        file.write(reinterpret_cast<char *>(&new_data), sizeof(T));
+                  }
+
+                  ~File()
+                  {
+                        file.close();
+                  }
+
+      };
+
+      std::stack<unsigned long> GetData(std::string filename)
       {
-            std::ifstream file(file_name, std::ios::binary | std::ios::ate);
+            std::stack<unsigned long> result;
+            std::ifstream file(filename);
 
-            if (!file)
-                  return 0;
+            unsigned long data;
+            while (file.read(reinterpret_cast<char *>(&data), sizeof(unsigned long)))
+            {
+                  result.push(data);
+            }
 
-            return file.tellg();
+            return result;
       }
 
       template<typename T>
-      T pop(std::string file_name)
+      void print(std::string filename)
       {
             T data;
+            std::ifstream file(filename);
 
-            std::fstream file(file_name, std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
-            unsigned long file_size = file.tellg();
-
-            file.seekg(file_size - sizeof(T));
-            file.read(reinterpret_cast<char *>(&data), sizeof(T));
-
-            file.seekp(file_size - sizeof(T));
-            file.write(NULL, 0);
-            file.close();
-
-            return data;
+            while (file.read(reinterpret_cast<char *>(&data), sizeof(T)))
+            {
+                  std::cout << data.in_use << " " << data.label_id << std::endl;
+            }
       }
 }
 
