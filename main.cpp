@@ -1,9 +1,8 @@
 #include <iostream>
 #include "API.h"
 #include <vector>
-#include "Processor.h"
-#include "Exception.h"
 #include "Parser.h"
+#include "Processor.h"
 
 using namespace std;
 
@@ -30,36 +29,41 @@ int main()
 
 
 
-      if (query == "get")
-      {
+      if (query == "get"){
             my_db.print();
       }
-      else if (query == "new")
-      {
+      else if (query == "new"){
             cin >> name;
             my_db.create(name);
       }
-      else if (query == "prop")
-      {
+      else if (query == "prop"){
             cin >> name;
-            Property p;
-            p.in_use = 1;
-            int id;
-            strcpy(p.key, name.c_str());
             string value;
             cin >> value;
+            int id;
             cin >> id;
-            strcpy(p.value, value.c_str());
-            vector<Property> v;
-            v.push_back(p);
-            my_db.addProperties(id * sizeof(Node), v);
+            id *= sizeof(Node);
+            my_db.createProperty(id, name, value);
+
       }
-      else
-      {
-            int fnode;
-            int snode;
-            cin >> name;
-            cin >> fnode >> snode;
+      else if (query == "rel"){
+            int fid, sid;
+            cin >> name >> fid >> sid;
+            fid *= sizeof(Node);
+            sid *= sizeof(Node);
+            my_db.createRelation(fid, sid, name);
+      }
+      else if (query == "drel"){
+            int id;
+            cin >> id;
+            id *= sizeof(Relation);
+            my_db.deleteRelation(id);
+      }
+      else if (query == "dnode"){
+            int id;
+            cin >> id;
+            id *= sizeof(Node);
+            my_db.deleteNode(id);
       }
 
       return 0;

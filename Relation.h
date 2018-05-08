@@ -1,63 +1,71 @@
 #ifndef RELATIONSHIP_H
 #define RELATIONSHIP_H
 
-struct Relation
+class Relation
 {
-      bool in_use{false};
-      int first_node;
-      int second_node;
-      int first_prev_id;
-      int first_next_id;
-      int second_prev_id;
-      int second_next_id;
-      int next_property;
-      bool first_chain_marker;
+      private:
+            bool m_used{true};
+            int m_fnode{-1};
+            int m_snode{-1};
+            int m_fprevious{-1};
+            int m_fnext{-1};
+            int m_sprevious{-1};
+            int m_snext{-1};
+            int m_label{-1};
+            int m_property{-1};
+            bool m_chained{false};
+      public:
+            Relation() = default;
+            Relation(int fnode, int snode, int label) : m_fnode(fnode), m_snode(snode), m_label(label) {}
 
-      int getFirstNode()
-      {
-            return first_node;
-      }
+            int getFirstNode(){
+                  return m_fnode;
+            }
 
-      int getSecondNode()
-      {
-            return second_node;
-      }
+            int getSecondNode(){
+                  return m_snode;
+            }
 
-      bool hasNext(int node_id)
-      {
-            if (node_id == first_node)  return first_next_id != -1;
-            if (node_id == second_node) return second_next_id != -1;
+            bool hasNext(int node){
+                  if (node == m_fnode) return m_fnext != -1;
+                  if (node == m_snode) return m_snext != -1;
+                  return false;
+            }
 
-            return -1;
-      }
+            bool hasPrevious(int node){
+                  if (node == m_fnode) return m_fprevious != -1;
+                  if (node == m_snode) return m_sprevious != -1;
+                  return false;
+            }
 
-      int getNext(int node_id)
-      {
-            if (node_id == first_node) return first_next_id;
-            if (node_id == second_node) return second_next_id;
+            int getNext(int node){
+                  if (node == m_fnode) return m_fnext;
+                  if (node == m_snode) return m_snext;
+                  return -1;
+            }
 
-            return -1;
-      }
+            int getPrevious(int node){
+                  if (node == m_fnode) return m_fprevious;
+                  if (node == m_snode) return m_sprevious;
+                  return -1;
+            }
 
-      void setFirstNextRel(int next_relID)
-      {
-            first_next_id = next_relID;
-      }
+            Relation &setNext(int node, int relation){
+                  if (node == m_fnode) m_fnext = relation;
+                  if (node == m_snode) m_snext = relation;
+                  return *this;
+            }
 
-      void setFirstPrevRel(int prev_relID)
-      {
-            first_prev_id = prev_relID;
-      }
+            Relation &setPrevious(int node, int relation){
+                  if (node == m_fnode) m_fprevious = relation;
+                  if (node == m_snode) m_sprevious = relation;
+                  return *this;
+            }
 
-      void setSecondNextRel(int next_relID)
-      {
-            second_next_id = next_relID;
-      }
-
-      void setSecondPrevRel(int prev_relID)
-      {
-            second_prev_id = prev_relID;
-      }
+            Relation &clear(){
+                  m_used = false;
+                  return *this;
+            }
 };
 
 #endif /* RELATIONSHIP_H */

@@ -1,27 +1,46 @@
 #ifndef PROPERTY_H
 #define PROPERTY_H
 
-struct Property
+class Property
 {
-      bool in_use{false};
-      char key[15];
-      char value[15];
-      int next_property_id{-1};
+      private:
+            bool m_used{true};
+            char m_key[20];
+            char m_value[100];
+            int m_property{-1};
+      public:
+            Property() = default;
+            Property(const std::string key, const std::string value, const int property){
+                  strcpy(m_key, key.c_str());
+                  strcpy(m_value, value.c_str());
+                  m_property = property;
+            }
 
-      bool hasNext()
-      {
-            return next_property_id != -1;
-      }
+            bool hasNext(){
+                  return m_property != -1;
+            }
 
-      int getNext()
-      {
-            return next_property_id;
-      }
+            int getNext(){
+                  return m_property;
+            }
 
-      void setNext(int next_id)
-      {
-            next_property_id = next_id;
-      }
+            Property &setNext(int property){
+                  m_property = property;
+                  return *this;
+            }
+
+            Property &clear(){
+                  m_used = false;
+                  return *this;
+            }
+
+            char * getKey(){
+                  return m_key;
+            }
+
+            char * getValue(){
+                  return m_value;
+            }
 };
 
 #endif /* PROPERTY_H */

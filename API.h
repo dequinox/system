@@ -12,8 +12,8 @@
 #include "Property.h"
 #include "Relation.h"
 
-class Database
-{
+class Database {
+
       private:
 
             std::string m_db;
@@ -27,102 +27,126 @@ class Database
             Database(const Database &other) = delete;
             Database() = delete;
 
-            Database(std::string db) : m_db(db)
-            {
+            Database(std::string db) : m_db(db) {
                   nodes = new IO::Store<Node>(m_db + ".nodes.store", m_db + ".node.ids");
-                  labels = new IO::Store<Label>(m_db + ".labels.store", m_db + "label.ids");
-                  relations = new IO::Store<Relation>(m_db + ".relations.store", m_db + "relation.ids");
-                  properties = new IO::Store<Property>(m_db + ".properties.store", m_db + "property.ids");
+                  labels = new IO::Store<Label>(m_db + ".labels.store", m_db + ".label.ids");
+                  relations = new IO::Store<Relation>(m_db + ".relations.store", m_db + ".relation.ids");
+                  properties = new IO::Store<Property>(m_db + ".properties.store", m_db + ".property.ids");
             }
 
-            int create(std::string label)
-            {
-                  Label new_label{true};
-                  strcpy(new_label.value, label.c_str());
+            int create(std::string label_name) {
+                  Node new_node(add(Label(label_name), labels));
 
-                  int label_id = add(new_label, labels);
-
-                  Node new_node{true, -1, -1, label_id};
                   return add(new_node, nodes);
             }
 
             template<typename T>
-            int add(T data, IO::Store<T> *store)
-            {
-                  unsigned long data_id = store->getNewID();
-                  store->write(data_id, data);
+            int add(T entity, IO::Store<T> *store) {
+                  int id = store->getNewID();
 
-                  return data_id;
+                  store->set(id, entity);
+                  return id;
             }
 
             template<typename T>
-            void delete(int data_id, IO::Store<T> *store)
-            {
-                  T data = store->read(data_id);
-                  data.setInUse(false);
-                  store->write(data);
+            void remove(int id, IO::Store<T> *store) {
+                  T entity = store->get(id);
+                  entity.clear();
+                  store->set(id, entity);
             }
 
-            void addRelation(Relation new_relation, std::string label)
+            int createRelation(int fnode, int snode, std::string label_name)
             {
-                  unsigned long fnodeID = new_relation.getFirstNode();
-                  unsigned long snodeID = new_relation.getSecondNode();
+                  Relation new_relation(fnode, snode, add(Label(label_name), labels));
 
-                  Node fnode = nodes->read(fnodeID);
-                  Node snode = nodes->read(snodeID);
+                  int id = add(new_relation, relations);
 
-                  unsigned long relID = add(new_relation, relations);
+                  linkRelation(fnode, id);
+                  linkRelation(snode, id);
 
-                  if (fnode.hasRelation())
-                  {
-                        unsigned long last_rel_id = getLastRelID(fnodeID, fnode.getRelationID());
-                        Relation last_relation = relations->read(last_rel_id);
-
-                        if (last_relation.getFirstNode() == fnodeID)
-                              last_relation.setFirstNextRel(relID);
-                        else
-                              last_relation.setSecondNextRel(relID);
-
-                        relations->write(last_rel_id, last_relation);
-                        new_relation.setFirstPrevRel(last_rel_id);
-                  }
-                  else
-                  {
-                        fnode.setNextRel(relID);
-                        nodes->write(fnodeID, fnode);
-                  }
-
-                  if (snode.hasRelation())
-                  {
-                        unsigned long last_rel_id = getLastRelID(snodeID, snode.getRelationID());
-                        Relation last_relation = relations->read(last_rel_id);
-
-                        if (last_relation.getFirstNode() == snodeID)
-                              last_relation.setFirstNextRel(relID);
-                        else
-                              last_relation.setSecondNextRel(relID);
-
-                        relations->write(last_rel_id, last_relation);
-                        new_relation.setSecondPrevRel(last_rel_id);
-                  }
-                  else
-                  {
-                        snode.setNextRel(relID);
-                        nodes->write(snodeID, snode);
-                  }
-
-
-                  Label new_label{true};
-                  strcpy(new_label.value, label.c_str());
-                  int label_id = add(new_label, labels);
-
-                  new_relation.setSecondPrevRel(relID);
-                  new_relation.setLabel(label_id);
-                  relations->write(relID, new_relation);
+                  return id;
             }
 
-            void print()
+            void linkRelation(int node_id, int rel_id)
             {
+                  Node node = nodes->get(node_id);
+
+                  relations->set(rel_id, relations->get(rel_id).setNext(node_id, node.getRelation()));
+                  if (node.hasRelation()){
+
+                        relations->set(node.getRelation(), relations->get(node.getRelation()).setPrevious(node_id, rel_id));
+                  }
+                  nodes->set(node_id, nodes->get(node_id).setRelation(rel_id));
+            }
+
+            void unlinkRelation(int node_id, int rel)
+            {
+                  Relation relation = relations->get(rel);
+                  int next = relation.getNext(node_id);
+                  int previous = relation.getPrevious(node_id);
+
+                  if (relation.hasPrevious(node_id))
+                        relations->set(previous, relations->get(previous).setNext(node_id, next));
+                  else
+                        nodes->set(node_id, nodes->get(node_id).setRelation(next));
+
+                  if (relation.hasNext(node_id))
+                        relations->set(next, relations->get(next).setPrevious(node_id, previous));
+
+            }
+
+            int createProperty(int node, std::string key, std::string value)
+            {
+                  Property new_property(key, value, nodes->get(node).getProperty());
+                  int id = add(new_property, properties);
+                  nodes->set(node, nodes->get(node).setProperty(id));
+
+                  return id;
+            }
+
+            template<typename T>
+            void removeEntity(IO::Store<T> *store, int id){
+                  store->set(id, store->get(id).clear());
+                  store->remove(id);
+            }
+
+            void deleteRelation(int relation){
+                  Relation drelation = relations->get(relation);
+
+                  unlinkRelation(drelation.getFirstNode(), relation);
+                  unlinkRelation(drelation.getSecondNode(), relation);
+
+                  removeEntity(relations, relation);
+            }
+
+            void deleteProperty(int property){
+                  removeEntity(properties, property);
+            }
+
+            template<typename T>
+            void traverse(IO::Store<T> *store, void (Database::*operation)(int)) {
+                  for (auto it = store->begin(); it != store->end(); it++)
+                  {
+                        (this->*operation)(*it);
+                  }
+
+            }
+
+            void deleteNode(int node){
+                  Node dnode = nodes->get(node);
+
+                  traverse(properties, &Database::deleteProperty);
+                  traverse(relations,  &Database::deleteRelation);
+
+                  removeEntity(labels, dnode.getLabel());
+                  removeEntity(nodes, node);
+            }
+
+/*            vector <int> match (vector<std::strings> relationTypes rels)
+            {
+            }*/
+
+            void print() {
                   std::cout << "Properties---------\n";
                   properties->printProperties();
                         std::cout << "Labels---------\n";
@@ -134,72 +158,7 @@ class Database
                         std::cout << "---------\n";
             }
 
-
-            void addProperties(int node_id, std::vector<Property> new_properties)
-            {
-                  Node node = nodes->read(node_id);
-
-                  int last_prop_id;
-                  int next_prop_id;
-
-                  if (!new_properties.empty())
-                  {
-                        Property last_prop;
-
-                        int next_id = -1;
-                        int id = -1;
-                        for (auto property : new_properties)
-                        {
-                              property.setNext(next_id);
-                              id = add(property, properties);
-                        }
-
-                        if (node.hasProperty())
-                        {
-                              last_prop_id = getLastPropID(node.property_id);
-                              Property last_prop = properties->read(last_prop_id);
-                              last_prop.setNext(id);
-                              properties->write(last_prop_id, last_prop);
-                        }
-                        else
-                        {
-                              node.setNextProperty(id);
-                              nodes->write(node_id, node);
-                        }
-                  }
-            }
-
-            int getLastPropID(int start_id) const
-            {
-                  int next = start_id;
-                  Property property = properties->read(next);
-
-                  while (property.hasNext())
-                  {
-                        next = property.getNext();
-                        std::cout << next << std::endl;
-                        property = properties->read(next);
-                  }
-
-                  return next;
-            }
-
-            int getLastRelID(int node_id, int rel_start_id) const
-            {
-                  int next = rel_start_id;
-                  Relation relation = relations->read(next);
-
-                  while (relation.hasNext(node_id))
-                  {
-                        next = relation.getNext(node_id);
-                        relation = relations->read(next);
-                  }
-
-                  return next;
-            }
-
-            ~Database()
-            {
+            ~Database() {
                   delete nodes;
                   delete labels;
                   delete properties;
