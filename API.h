@@ -143,7 +143,20 @@ class Database {
                   removeEntity(nodes, node);
             }
 
-            std::vector<std::vector<int> > bfs(std::string label[], int size)
+            bool propertyExists(int id, std::pair<std::string, std::string> keyValue){
+                  Property property = properties->get(id);
+                  while (true){
+                        if (property.getKey() == keyValue.first && property.getValue() == keyValue.second)
+                              return true;
+                        if (property.hasNext())
+                              property = properties->get(property.getNext());
+                        else break;
+                  }
+                  return false;
+            }
+
+            std::vector<std::vector<int> > bfs(std::string label[], int size,
+                  int positions[], std::pair<std::string, std::string> keyValues[], int psize)
             {
                   std::vector<std::vector<int> > result(size);
                   std::queue<int> depth;
@@ -155,10 +168,19 @@ class Database {
 
                   for (auto it = nodes->begin(); it != nodes->end(); it++){
                         if (labels->get(nodes->get(*it).getLabel()).getValue() == label[0]){
-                              int rid = *it;
-                              result[0].push_back(rid);
-                              nid.push(*it);
-                              depth.push(0);
+                              bool flag = true;
+                              for (int i = 0; i < psize; i++){
+                                    if (positions[i] == 0){
+                                          if (nodes->get(*it).hasProperty() && !propertyExists(nodes->get(*it).getProperty(), keyValues[i]))
+                                                flag = false;
+                                    }
+                              }
+                              if (flag){
+                                    int rid = *it;
+                                    result[0].push_back(rid);
+                                    nid.push(*it);
+                                    depth.push(0);
+                              }
                         }
                   }
 
@@ -170,7 +192,6 @@ class Database {
                         nid.pop();
 
                         if (d + 1 == size) continue;
-
                         node = nodes->get(id);
 
                         if (node.hasRelation()){
@@ -179,10 +200,23 @@ class Database {
                               while (true){
                                     if (labels->get(relation.getLabel()).getValue() == label[d + 1]){
                                           if (labels->get(relation.getOtherNode(id)).getValue() == label[d + 2]){
-                                                nid.push(relation.getOtherNode(id));
-                                                depth.push(d + 2);
-                                                result[d + 1].push_back(node.getRelation());
-                                                result[d + 2].push_back(relation.getOtherNode(id));
+                                                bool flag = true;
+                                                for (int i = 0; i < psize; i++){
+                                                      if (positions[i] == d + 1){
+                                                            if (!propertyExists(relation.getProperty(), keyValues[i]))
+                                                                  flag = false;
+                                                      }
+                                                      if (positions[i] == d + 2){
+                                                            if (!propertyExists(node.getProperty(), keyValues[i]))
+                                                                  flag = false;
+                                                      }
+                                                }
+                                                if (flag){
+                                                      nid.push(relation.getOtherNode(id));
+                                                      depth.push(d + 2);
+                                                      result[d + 1].push_back(node.getRelation());
+                                                      result[d + 2].push_back(relation.getOtherNode(id));
+                                                }
                                           }
                                     }
 
@@ -195,8 +229,103 @@ class Database {
                   return result;
             }
 
+            void createRelations(std::string label[], int size, int positions[],
+                  std::pair<std::string,std::string> keyValues[], int psize, std::string newLabel){
+                  Node fnode;
+                  Node snode;
+                  for (auto f = nodes->begin(); f != nodes->end(); f++)
+                  {
+                        for (auto s = nodes->begin(); s != nodes->end(); s++){
+                              if (*f != *s){
+                                    fnode = nodes->get(*f);
+                                    snode = nodes->get(*s);
+                                    if (labels->get(fnode.getLabel()).getValue() == label[0]){
+                                          if (labels->get(snode.getLabel()).getValue() == label[1]){
+                                                bool flag = true;
+                                                for (int i = 0; i < psize; i++){
+                                                      if (positions[i] == 0){
+                                                            if (!propertyExists(fnode.getProperty(), keyValues[i]))
+                                                                  flag = false;
+                                                      }
+                                                      if (positions[i] == 1){
+                                                            if (!propertyExists(snode.getProperty(), keyValues[i]))
+                                                                  flag = false;
+                                                      }
+                                                }
+                                                if (flag){
+                                                      createRelation(*f, *s, newLabel);
+                                                }
+                                          }
+                                    }
+                              }
+                        }
+                  }
+            }
+
+            void set(std::vector<int> &ids, std::pair<std::string, std::string> keyValue){
+                  for (auto id : ids){
+                        if (nodes->get(id).hasProperty())
+                              modify(nodes->get(id).getProperty(), keyValue);
+                  }
+            }
+
+            void modify(int id, std::pair<std::string, std::string> keyValue){
+                  int next = id;
+                  Property property = properties->get(next);
+
+                  while (true){
+                        if (property.getKey() == keyValue.first)
+                              properties->set(next, property.setValue(keyValue.second));
+                        if (property.hasNext()){
+                              next = property.getNext();
+                              property = properties->get(next);
+                        }
+                        else break;
+                  }
+            }
+
+            void printPropertiesList(int id){
+
+                  Property property = properties->get(id);
+
+                  while (true){
+                        std::cout << property.getKey() << ": " << property.getValue();
+                        std::cout << std::endl;
+
+                        if (property.hasNext())
+                              property = properties->get(property.getNext());
+                        else break;
+                  }
+            }
 
 
+            void printNodes(std::vector<int> &node_ids){
+                  for (int i = 0; i < node_ids.size(); i++){
+                        Node node = nodes->get(node_ids[i]);
+
+                        std::cout << std::endl;
+                        std::cout << "ID: " << node_ids[i] / sizeof(Node) << std::endl;
+                        std::cout << "Label: " << labels->get(node.getLabel()).getValue() << std::endl;
+                        if (node.hasProperty())
+                              printPropertiesList(node.getProperty());
+                        std::cout << std::endl;
+                  }
+            }
+
+            void printRelations(std::vector<int> &rel_ids){
+                  for (int i = 0; i < rel_ids.size(); i++){
+                        Relation relation = relations->get(rel_ids[i]);
+
+                        std::cout << std::endl;
+                        std::cout << "ID: " << rel_ids[i] / sizeof(Relation) << std::endl;
+                        std::cout << "TYPE: " << labels->get(relation.getLabel()).getValue() << std::endl;
+                        std::cout << "FNODE: " << relation.getFirstNode() << std::endl;
+                        std::cout << "SNODE: " << relation.getSecondNode() << std::endl;
+                        if (relation.hasProperty())
+                              printPropertiesList(relation.getProperty());
+                        std::cout << std::endl;
+                  }
+            }
             void print() {
                   std::cout << "Properties---------\n";
                   properties->printProperties();

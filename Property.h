@@ -24,6 +24,11 @@ class Property
                   return m_property;
             }
 
+            Property &setValue(std::string value){
+                  strcpy(m_value, value.c_str());
+                  return *this;
+            }
+
             Property &setNext(int property){
                   m_property = property;
                   return *this;

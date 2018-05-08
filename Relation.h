@@ -36,6 +36,14 @@ class Relation
                   return m_label;
             }
 
+            int getProperty(){
+                  return m_property;
+            }
+
+            bool hasProperty(){
+                  return m_property != -1;
+            }
+
             bool hasNext(int node){
                   if (node == m_fnode) return m_fnext != -1;
                   if (node == m_snode) return m_snext != -1;
