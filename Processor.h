@@ -28,6 +28,7 @@ class Processor
             std::string m_labels[15];
             std::string m_statement;
             std::string condition;
+            std::vector< <vector < int > > ids;
             int size{0};
             Database &m_db;
             int CurTok;
@@ -215,7 +216,7 @@ class Processor
                                   << position << std::endl;
                   }
 
-
+                  ids = m_db.bfs(m_labels, size);
             }
 
             void HandleCondition(){

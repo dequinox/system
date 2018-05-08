@@ -142,9 +142,57 @@ class Database {
                   removeEntity(nodes, node);
             }
 
-/*            vector <int> match (vector<std::strings> relationTypes rels)
+            std::vector < <vector <int> > > bfs (std::string labels, int size)
             {
-            }*/
+                  std::vector<vector<int> > result(vector<int>(size));
+                  std::queue<int> depth;
+                  std::queue<int> nid;
+                  Node node;
+                  Relation relation;
+                  int d;
+                  int id;
+
+                  for (auto it = nodes->begin(); it != nodes->end(); it++){
+                        if (labels->get(nodes->get(*it).getLabel()).getValue() == labels[0]){
+                              result[0].push_back(*it);
+                              nid.push_back(*it);
+                              snodes.push_back(nodes->get(*it));
+                              depth.push_back(0);
+                        }
+                  }
+
+                  while (!ids.empty()){
+                        d = depth.top();
+                        id = nid.top();
+
+                        depth.pop();
+                        nid.pop();
+
+                        node = nodes->get(id);
+
+                        if (node.hasRelation()){
+                              relation = relations->get(node.getRelation());
+
+                              while (true){
+                                    if (labels->get(relation.getLabel()).getValue() == labels[d + 1]){
+                                          if (labels->get(relation.getOtherNode(id)).getValue() == labels[d + 2]){
+                                                nid.push_back(relation.getOtherNode(id));
+                                                depth.push_back(d + 2);
+                                                result[d + 1].push_back(node.getRelation());
+                                                result[d + 2].push_back(relation.getOtherNode(id));
+                                          }
+                                    }
+
+                                    if (!relation.hasNext(id)) break;
+                                    relation = relations->get(relation.getNext(id));
+                              }
+                        }
+                  }
+
+                  return result;
+            }
+
+
 
             void print() {
                   std::cout << "Properties---------\n";
