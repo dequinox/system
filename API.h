@@ -4,6 +4,7 @@
 #include "IO.h"
 #include "Node.h"
 #include <stack>
+#include <queue>
 #include <vector>
 #include <iostream>
 #include <cstring>
@@ -142,9 +143,9 @@ class Database {
                   removeEntity(nodes, node);
             }
 
-            std::vector < <vector <int> > > bfs (std::string labels, int size)
+            std::vector<std::vector<int> > bfs(std::string label[], int size)
             {
-                  std::vector<vector<int> > result(vector<int>(size));
+                  std::vector<std::vector<int> > result(size);
                   std::queue<int> depth;
                   std::queue<int> nid;
                   Node node;
@@ -153,20 +154,22 @@ class Database {
                   int id;
 
                   for (auto it = nodes->begin(); it != nodes->end(); it++){
-                        if (labels->get(nodes->get(*it).getLabel()).getValue() == labels[0]){
-                              result[0].push_back(*it);
-                              nid.push_back(*it);
-                              snodes.push_back(nodes->get(*it));
-                              depth.push_back(0);
+                        if (labels->get(nodes->get(*it).getLabel()).getValue() == label[0]){
+                              int rid = *it;
+                              result[0].push_back(rid);
+                              nid.push(*it);
+                              depth.push(0);
                         }
                   }
 
-                  while (!ids.empty()){
-                        d = depth.top();
-                        id = nid.top();
+                  while (!nid.empty()){
+                        d = depth.front();
+                        id = nid.front();
 
                         depth.pop();
                         nid.pop();
+
+                        if (d + 1 == size) continue;
 
                         node = nodes->get(id);
 
@@ -174,10 +177,10 @@ class Database {
                               relation = relations->get(node.getRelation());
 
                               while (true){
-                                    if (labels->get(relation.getLabel()).getValue() == labels[d + 1]){
-                                          if (labels->get(relation.getOtherNode(id)).getValue() == labels[d + 2]){
-                                                nid.push_back(relation.getOtherNode(id));
-                                                depth.push_back(d + 2);
+                                    if (labels->get(relation.getLabel()).getValue() == label[d + 1]){
+                                          if (labels->get(relation.getOtherNode(id)).getValue() == label[d + 2]){
+                                                nid.push(relation.getOtherNode(id));
+                                                depth.push(d + 2);
                                                 result[d + 1].push_back(node.getRelation());
                                                 result[d + 2].push_back(relation.getOtherNode(id));
                                           }

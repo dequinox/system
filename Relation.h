@@ -26,6 +26,16 @@ class Relation
                   return m_snode;
             }
 
+            int getOtherNode(int node){
+                  if (node == m_fnode) return m_snode;
+                  if (node == m_snode) return m_fnode;
+                  return -1;
+            }
+
+            int getLabel(){
+                  return m_label;
+            }
+
             bool hasNext(int node){
                   if (node == m_fnode) return m_fnext != -1;
                   if (node == m_snode) return m_snext != -1;
