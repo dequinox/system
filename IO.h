@@ -96,14 +96,14 @@ namespace IO
                         file.seekg(0);
                         T data;
                         while (file.read(reinterpret_cast<char *>(&data), sizeof(T))) {
-                              std::cout<< file.tellg() - sizeof(T) << " " << data.getValue() << std::endl;
+                              std::cout<< (int)file.tellg() - sizeof(T) << " " << data.getValue() << std::endl;
                         }
                   }
                   void printNodes() {
                         file.seekg(0);
                         T data;
                         while (file.read(reinterpret_cast<char *>(&data), sizeof(T))) {
-                              std::cout << file.tellg() - sizeof(T) << " "
+                              std::cout << (int)file.tellg() - sizeof(T) << " "
                                         << data.getRelation() << " " << data.getProperty() << " "
                                         << data.getLabel() << std::endl;
                         }
@@ -112,7 +112,7 @@ namespace IO
                         file.seekg(0);
                         T data;
                         while (file.read(reinterpret_cast<char *>(&data), sizeof(T))) {
-                              std::cout << file.tellg() - sizeof(T) << " "
+                              std::cout << (int)file.tellg() - sizeof(T) << " "
                                         << data.getKey() << " " << data.getValue() << " "
                                         << data.getNext() << std::endl;
                         }
@@ -121,7 +121,7 @@ namespace IO
                         file.seekg(0);
                         T data;
                         while (file.read(reinterpret_cast<char *>(&data), sizeof(T))) {
-                              std::cout << file.tellg() - sizeof(T) << " " << data.getFirstNode() << " "
+                              std::cout << (int)file.tellg() - sizeof(T) << " " << data.getFirstNode() << " "
                                         << data.getSecondNode() << " "
                                         << data.getNext(data.getFirstNode()) << " "
                                         << data.getNext(data.getSecondNode())<< " "

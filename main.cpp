@@ -25,12 +25,10 @@ int main()
 
       Database my_db("dequinox");
       string name;
-/*      getline(cin, query);
+      /*getline(cin, query);
       Processor p(my_db);
-      p.execute(query);
-
-*/
-      cin >> query;
+      p.execute(query);*/
+cin >> query;
       if (query == "get"){
             my_db.print();
       }

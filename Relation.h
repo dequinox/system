@@ -1,6 +1,7 @@
 #ifndef RELATIONSHIP_H
 #define RELATIONSHIP_H
 
+#pragma pack(push, 1)
 class Relation
 {
       private:
@@ -85,5 +86,6 @@ class Relation
                   return *this;
             }
 };
+#pragma pack(pop)
 
 #endif /* RELATIONSHIP_H */
